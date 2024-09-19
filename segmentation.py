@@ -7,10 +7,10 @@ import extractData
 
 
 class CLASP(object):
-    def __init__(self):
+    def __init__(self, method="sampling", delta_switch=True):
         self.data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
-        homogenise_method = "sampling"
-        delta = True
+        homogenise_method = method
+        delta = delta_switch
         if delta:
             self.data.delta()
         self.data.homogenise(method=homogenise_method, size=10)
@@ -93,4 +93,4 @@ if __name__ == '__main__':
     # rup = RUPTURES()
     # rup.segment()
     clsp = CLASP()
-    clsp.segment()
+    clsp.test()

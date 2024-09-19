@@ -1,6 +1,7 @@
 from os import path
 import pandas
 from math import floor
+import matplotlib.pyplot as plt
 
 
 class Data(object):
@@ -91,6 +92,8 @@ if __name__ == '__main__':
     print("-----------------Homogenised")
     for i in e.iterable:
         print(i.df.head())
+    e.TEMP.df['delta'].plot()
+    plt.show()
 
     # print([i for i, x in enumerate(e.TAGS) if x == 1])
     # print(f"Tags length: {len(e.TAGS)}")
