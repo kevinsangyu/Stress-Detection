@@ -10,13 +10,22 @@ class CLASP(object):
     def __init__(self):
         self.data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
         homogenise_method = "sampling"
+        delta = True
+        if delta:
+            self.data.delta()
         self.data.homogenise(method=homogenise_method, size=10)
 
         self.ts = self.data.HR.df
         if homogenise_method == "window":
-            self.ts = self.ts['MA']
+            if delta:
+                self.ts = self.ts['MA_delta']
+            else:
+                self.ts = self.ts['MA']
         else:
-            self.ts = self.ts[0]
+            if delta:
+                self.ts = self.ts['delta']
+            else:
+                self.ts = self.ts[0]
 
     def segment(self):
         n_cps = 5
@@ -81,7 +90,7 @@ class RUPTURES(object):
 
 
 if __name__ == '__main__':
-    rup = RUPTURES()
-    rup.segment()
-    # clsp = CLASP()
-    # clsp.segment()
+    # rup = RUPTURES()
+    # rup.segment()
+    clsp = CLASP()
+    clsp.segment()
