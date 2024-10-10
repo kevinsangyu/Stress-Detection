@@ -92,5 +92,5 @@ class RUPTURES(object):
 if __name__ == '__main__':
     # rup = RUPTURES()
     # rup.segment()
-    clsp = CLASP()
-    clsp.test()
+    clsp = CLASP(delta_switch=True)
+    clsp.segment()

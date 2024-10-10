@@ -11,6 +11,10 @@ class Data(object):
             return
         self.file_path = f_path
         self.df = pandas.read_csv(self.file_path, skiprows=2, header=None)
+        if f_path.split(r'/')[-1] != r'ACC.csv' and f_path.split(r'/')[-1] != r'IBI.csv':
+            self.df.rename(columns={0: f_path.split(r'/')[-1][:-4]}, inplace=True)
+        elif f_path.split(r'/')[-1] == r'ACC.csv':
+            self.df.rename(columns={0: 'x', 1: 'y', 2: 'z'}, inplace=True)
         with open(self.file_path) as file:
             self.init_time = file.readline().strip().split(",")
             self.sampling = file.readline().strip().split(",")
@@ -56,28 +60,28 @@ class Extract(object):
             for i in self.iterable:
                 sample = int(float(i.sampling[0]))
                 if i == self.ACC:
-                    i.df['MA0'] = i.df.rolling(window=size)[0].mean()
-                    i.df['MA1'] = i.df.rolling(window=size)[1].mean()
-                    i.df['MA2'] = i.df.rolling(window=size)[2].mean()
-                    if '0_delta' in i.df.columns:
-                        i.df['MA0_delta'] = i.df.rolling(window=size)['0_delta'].mean()
-                        i.df['MA1_delta'] = i.df.rolling(window=size)['1_delta'].mean()
-                        i.df['MA2_delta'] = i.df.rolling(window=size)['2_delta'].mean()
+                    i.df['MAx'] = i.df.rolling(window=size)['x'].mean()
+                    i.df['MAy'] = i.df.rolling(window=size)['y'].mean()
+                    i.df['MAz'] = i.df.rolling(window=size)['z'].mean()
+                    if 'x_delta' in i.df.columns:
+                        i.df['MAx_delta'] = i.df.rolling(window=size)['x_delta'].mean()
+                        i.df['MAy_delta'] = i.df.rolling(window=size)['y_delta'].mean()
+                        i.df['MAz_delta'] = i.df.rolling(window=size)['z_delta'].mean()
                     i.df = i.df.iloc[::sample, :]
                 else:
-                    i.df['MA'] = i.df.rolling(window=size)[0].mean()
-                    if 'delta' in i.df.columns:
-                        i.df['MA_delta'] = i.df.rolling(window=size)[0].mean()
+                    i.df[f'{i.file_path.split(r"/")[-1][:-4]}-MA'] = i.df.rolling(window=size)[i.df.columns[0]].mean()
+                    if f'{i.file_path.split(r"/")[-1][:-4]}-delta' in i.df.columns:
+                        i.df[f'{i.file_path.split(r"/")[-1][:-4]}-MA_delta'] = i.df.rolling(window=size)[f'{i.file_path.split(r"/")[-1][:-4]}-delta'].mean()
                     i.df = i.df.iloc[::sample, :]
 
     def delta(self):
         for i in self.iterable:
             if i == self.ACC:
-                i.df[['0_delta']] = i.df[[0]].pct_change().fillna(0)
-                i.df[['1_delta']] = i.df[[1]].pct_change().fillna(0)
-                i.df[['2_delta']] = i.df[[2]].pct_change().fillna(0)
+                i.df[['x_delta']] = i.df[['x']].pct_change().fillna(0)
+                i.df[['y_delta']] = i.df[['y']].pct_change().fillna(0)
+                i.df[['z_delta']] = i.df[['z']].pct_change().fillna(0)
             else:
-                i.df[['delta']] = i.df[[0]].pct_change().fillna(0)
+                i.df[[f'{i.file_path.split(r"/")[-1][:-4]}-delta']] = i.df[[i.df.columns[0]]].pct_change().fillna(0)
 
 
 if __name__ == '__main__':
@@ -91,9 +95,9 @@ if __name__ == '__main__':
     e.homogenise(method="window", size=10)
     print("-----------------Homogenised")
     for i in e.iterable:
-        print(i.df.head())
-    e.TEMP.df['delta'].plot()
-    plt.show()
+        print(i.file_path)
+        print(i.df.head(20))
+
 
     # print([i for i, x in enumerate(e.TAGS) if x == 1])
     # print(f"Tags length: {len(e.TAGS)}")
