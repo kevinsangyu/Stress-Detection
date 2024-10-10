@@ -2,6 +2,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import MaxAbsScaler, StandardScaler
 import extractData
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class Kmeans_single():
@@ -44,9 +45,38 @@ class Kmeans_multiple():
         data.delta()
         data.homogenise(method="window", size=10)
 
-        data.HR.df.dropna(inplace=True)
-        # todo
+        df = pd.DataFrame([])
+        for i in data.iterable:
+            df = pd.concat([df, i.df], axis=1)
+        df.dropna(inplace=True)
+
+        scaled_data = scaler.fit_transform(df)
+        kmeans = KMeans(n_clusters=3, random_state=0)
+        kmeans.fit(scaled_data)
+
+        color_dict = {}
+
+        for cluster in range(kmeans.n_clusters):
+            cluster_data = df[kmeans.labels_ == cluster]
+            for i in range(cluster_data.shape[0]):
+                if cluster == 0:
+                    color_dict[cluster_data.index[i]] = 'red'
+                elif cluster == 1:
+                    color_dict[cluster_data.index[i]] = 'green'
+                elif cluster == 2:
+                    color_dict[cluster_data.index[i]] = 'blue'
+
+        print(df.to_string())
+
+        plt.figure(figsize=(8, 6))
+        for i in df.index:
+            for column in df.columns:
+                plt.plot(i, df[column][i], 'o', color=color_dict.get(i, 'black'))
+        plt.show()
+
+        # plt.scatter(df.iloc[:, 0], df.iloc[:, 1], c=kmeans.labels_)
+        # plt.show()
 
 
 if __name__ == '__main__':
-    test = Kmeans_single()
+    test = Kmeans_multiple()

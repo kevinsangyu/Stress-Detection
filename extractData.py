@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 
 class Data(object):
-    def __init__(self, f_path : str):
+    def __init__(self, f_path: str):
         if f_path == r"tags.csv":
             self.df = []
             return
@@ -26,12 +26,12 @@ class Data(object):
 class Extract(object):
     def __init__(self, dir_path):
         self.dir_path = dir_path
-        self.ACC = Data(path.join(self.dir_path, r"ACC.csv"))
-        self.BVP = Data(path.join(self.dir_path, r"BVP.csv"))
-        self.EDA = Data(path.join(self.dir_path, r"EDA.csv"))
-        self.HR = Data(path.join(self.dir_path, r"HR.csv"))
+        self.ACC = Data(path.join(self.dir_path, r"ACC.csv").replace("\\","/"))
+        self.BVP = Data(path.join(self.dir_path, r"BVP.csv").replace("\\","/"))
+        self.EDA = Data(path.join(self.dir_path, r"EDA.csv").replace("\\","/"))
+        self.HR = Data(path.join(self.dir_path, r"HR.csv").replace("\\","/"))
         # self.IBI = Data(path.join(self.dir_path, r"IBI.csv"))
-        self.TEMP = Data(path.join(self.dir_path, r"TEMP.csv"))
+        self.TEMP = Data(path.join(self.dir_path, r"TEMP.csv").replace("\\","/"))
         self.TAGS = [0 for i in range(0, len(self.HR.df))]
         self.iterable = [self.ACC, self.BVP, self.EDA, self.HR, self.TEMP]  # TAGS and IBI excluded.
         self.get_tags()
