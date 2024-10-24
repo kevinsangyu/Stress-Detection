@@ -1,11 +1,14 @@
 from sklearn.cluster import KMeans, DBSCAN
 from sklearn.preprocessing import MaxAbsScaler, StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
 import extractData
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import pandas as pd
 from sklearn.tree import _tree, DecisionTreeClassifier, plot_tree
+import numpy as np
 
 
 class Kmeans_single():
@@ -51,6 +54,7 @@ class Kmeans_single():
                 Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label='Cluster 2')]
 
             plt.legend(handles=legend_elements)
+
             X = df.drop(columns='Cluster')
             y = df['Cluster']
 
@@ -87,9 +91,6 @@ class Kmeans_multiple():
         scaled_data = scaler.fit_transform(df)
         algorithm = KMeans(n_clusters=3, random_state=0)
         algorithm.fit(scaled_data)
-        # identify what the clusters are discriminated by (centroids)
-        # decision tree to characterise the clusters
-
         # try diff clustering: dbscan: https://scikit-learn.org/stable/modules/clustering.html
 
         color_dict = {}
@@ -113,5 +114,76 @@ class Kmeans_multiple():
         plt.show()
 
 
+class Dbscan():
+    def __init__(self, drop_list=()):
+        data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
+        data.delta()
+        data.homogenise(method="window", size=10)
+
+        df = pd.DataFrame([])
+        for i in data.iterable:
+            df = pd.concat([df, i.df], axis=1)
+        df.dropna(inplace=True)
+        if drop_list:
+            for drop in drop_list:
+                for col in df.columns:
+                    if drop in col:
+                        df.drop(col, axis=1, inplace=True)
+
+        pca = PCA(n_components=2)
+        reduced_data = pca.fit_transform(df)
+
+        # self.nearest(reduced_data)
+
+        scan = DBSCAN(eps=40, min_samples=2)
+        labels = scan.fit_predict(reduced_data)
+
+        clf = DecisionTreeClassifier(random_state=42)
+        clf.fit(df, labels)
+
+        cluster_colors = ['red', 'green', 'blue', 'purple', 'brown']  # Replace with your cluster colors
+        noise_color = 'grey'  # Color for noise points
+
+        # Plot each time series, coloring the segments by the cluster
+        plt.figure(figsize=(12, 6))
+        for col in df.columns:
+            plt.plot(df[col], color='black', alpha=0.5)
+            for cluster_label in np.unique(labels):
+                if cluster_label == -1:
+                    color = noise_color  # Noise
+                else:
+                    color = cluster_colors[cluster_label]  # Cluster colors
+
+                # Plot only the segments that belong to the current cluster
+                cluster_indices = np.where(labels == cluster_label)[0]
+                plt.plot(df.index[cluster_indices],
+                         df[col].iloc[cluster_indices], 'o',
+                         label=f'Cluster {cluster_label}' if cluster_label != -1 else 'Noise',
+                         color=color)
+
+            plt.title(f'Time Series: {col}')
+            plt.xlabel('Time')
+            plt.ylabel('Value')
+            plt.show()
+            plot_tree(clf, feature_names=df.columns, class_names=[f'Cluster {i}' for i in np.unique(labels)],
+                      filled=True, fontsize=10)
+            plt.show()
+
+    def nearest(self, reduced_data):
+        k = 2  # Choose the same value as min_samples in DBSCAN
+        nbrs = NearestNeighbors(n_neighbors=k).fit(reduced_data)
+        distances, indices = nbrs.kneighbors(reduced_data)
+
+        # Sort distances (k-th nearest neighbor distance for each point)
+        distances = np.sort(distances[:, k - 1])
+
+        # Plot the k-distance plot
+        plt.plot(distances)
+        plt.ylabel('k-distance')
+        plt.xlabel('Data Points sorted by distance')
+        plt.title('k-distance Graph to determine optimal eps')
+        plt.show()
+
+
 if __name__ == '__main__':
-    test = Kmeans_single()
+    test = Dbscan(drop_list=('MA', 'delta'))
