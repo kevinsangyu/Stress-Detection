@@ -78,8 +78,9 @@ class Animator(object):
 
 
 if __name__ == '__main__':
-    e = Extract(r"data/Season4VSBallTorture/Kevin/")
-    e.homogenise()
+    e = Extract(r"data/Kevin data/2024_06_24_finals")
+    e.homogenise(method="window")
     a = Animator(e)
     print(len(e.TAGS))
+    print([i for i, n in enumerate(e.TAGS) if n == 1])
     a.tags()

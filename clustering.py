@@ -15,7 +15,7 @@ class Kmeans_single():
     def __init__(self):
         prep = MaxAbsScaler()
 
-        data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
+        data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         data.delta()
         data.homogenise(method="window", size=10)
 
@@ -79,7 +79,7 @@ class Kmeans_single():
 class Kmeans_multiple():
     def __init__(self):
         scaler = StandardScaler()
-        data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
+        data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         data.delta()
         data.homogenise(method="window", size=10)
 
@@ -87,6 +87,7 @@ class Kmeans_multiple():
         for i in data.iterable:
             df = pd.concat([df, i.df], axis=1)
         df.dropna(inplace=True)
+        print(df.to_string())
 
         scaled_data = scaler.fit_transform(df)
         algorithm = KMeans(n_clusters=3, random_state=0)
@@ -115,33 +116,42 @@ class Kmeans_multiple():
 
 
 class Dbscan():
-    def __init__(self, drop_list=()):
-        data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
+    def __init__(self, drop_list=(), select_list=()):
+        data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         data.delta()
         data.homogenise(method="window", size=10)
 
         df = pd.DataFrame([])
         for i in data.iterable:
             df = pd.concat([df, i.df], axis=1)
+        print(df.to_string())
         df.dropna(inplace=True)
         if drop_list:
             for drop in drop_list:
                 for col in df.columns:
                     if drop in col:
                         df.drop(col, axis=1, inplace=True)
+        if select_list:
+            for select in select_list:
+                for col in df.columns:
+                    if select not in col:
+                        df.drop(col, axis=1, inplace=True)
 
         pca = PCA(n_components=2)
         reduced_data = pca.fit_transform(df)
 
-        # self.nearest(reduced_data)
+        self.nearest(reduced_data)
+        epsilon = int(input("Enter elbow value: "))
+        # epsilon = 30
 
-        scan = DBSCAN(eps=40, min_samples=2)
+        scan = DBSCAN(eps=epsilon, min_samples=2)
         labels = scan.fit_predict(reduced_data)
+        print(f"{len(set(labels))} Clusters")
 
         clf = DecisionTreeClassifier(random_state=42)
         clf.fit(df, labels)
 
-        cluster_colors = ['red', 'green', 'blue', 'purple', 'brown']  # Replace with your cluster colors
+        cluster_colors = ['red', 'green', 'blue', 'purple', 'brown', 'black']  # Replace with your cluster colors
         noise_color = 'grey'  # Color for noise points
 
         # Plot each time series, coloring the segments by the cluster
@@ -186,4 +196,7 @@ class Dbscan():
 
 
 if __name__ == '__main__':
-    test = Dbscan(drop_list=('MA', 'delta'))
+    # test = Dbscan(drop_list=('MA', 'delta'))
+    test = Kmeans_multiple()
+    test = Dbscan(select_list=('delta'))
+

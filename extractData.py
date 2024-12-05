@@ -2,6 +2,7 @@ from os import path
 import pandas
 from math import floor
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class Data(object):
@@ -32,9 +33,11 @@ class Extract(object):
         self.HR = Data(path.join(self.dir_path, r"HR.csv").replace("\\","/"))
         # self.IBI = Data(path.join(self.dir_path, r"IBI.csv"))
         self.TEMP = Data(path.join(self.dir_path, r"TEMP.csv").replace("\\","/"))
+        self.STRESS = [0 for i in range(0, len(self.HR.df))]
         self.TAGS = [0 for i in range(0, len(self.HR.df))]
         self.iterable = [self.ACC, self.BVP, self.EDA, self.HR, self.TEMP]  # TAGS and IBI excluded.
         self.get_tags()
+        self.get_stress()
 
     def get_tags(self):
         init_time = floor(float(self.HR.init_time[0]))
@@ -43,6 +46,17 @@ class Extract(object):
         for tag in tags:
             tag_time = floor(float(tag.strip()))
             self.TAGS[tag_time-init_time] = 1
+
+    def get_stress(self):
+        try:
+            stress_txt = open(path.join(self.dir_path, r"stress.txt"))
+        except FileNotFoundError:
+            print("No stress file found.")
+            raise FileNotFoundError
+        for line in stress_txt.readlines():
+            [min, max] = line.split("-")
+            for i in range(int(min), int(max)+1):
+                self.STRESS[i] = 1
 
     def common_denominator(self):
         small = 500.0
@@ -85,20 +99,22 @@ class Extract(object):
 
 
 if __name__ == '__main__':
-    e = Extract(r"data/Season4VSBallTorture/Kevin/")
-    for i in e.iterable:
-        print(i.df.head())
+    e = Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
+    e.get_stress()
     e.delta()
-    print("---------------------Delta'd")
-    for i in e.iterable:
-        print(i.df.head())
     e.homogenise(method="window", size=10)
-    print("-----------------Homogenised")
+
+    df = pd.DataFrame([])
     for i in e.iterable:
-        print(i.file_path)
-        print(i.df.head(20))
+        print(f"Adding: {i.file_path} with length: {len(i.df)}")
+        df = pd.concat([df, i.df], axis=1)
+        print(df.to_string())
+        input("Enter to continue")
 
+    print([i for i, x in enumerate(e.TAGS) if x == 1])
+    print(f"Tags length: {len(e.TAGS)}")
+    print(f"HR length: {len(e.HR.df)}")
 
-    # print([i for i, x in enumerate(e.TAGS) if x == 1])
-    # print(f"Tags length: {len(e.TAGS)}")
-    # print(f"HR length: {len(e.HR.df)}")
+    print([i for i, x in enumerate(e.STRESS) if x == 1])
+    print(f"Stress length: {len(e.STRESS)}")
+    print(f"HR length: {len(e.HR.df)}")
