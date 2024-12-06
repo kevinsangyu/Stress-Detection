@@ -12,13 +12,10 @@ class LRegression:
         self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         self.data.delta()
         self.data.homogenise(method="window", size=10)
-        df = pd.DataFrame([])
+        self.df = pd.DataFrame([])
         for i in self.data.iterable:
-            df = pd.concat([df, i.df], axis=1)
-        df.dropna(inplace=True)
-        print(df.to_string())
-        self.df = df
-
+            self.df = pd.concat([self.df.reset_index(drop=True), i.df.reset_index(drop=True)], axis=1)
+        self.df.dropna(inplace=True)
         self.X_train = self.X_test = self.y_train = self.y_test = pd.DataFrame([])
 
     def drop(self, drop_list=()):
@@ -66,6 +63,6 @@ class LRegression:
 
 if __name__ == '__main__':
     lr = LRegression()
-    lr.drop(("MA", "delta"))
-    lr.scalesplit()
-    lr.predict()
+    # lr.drop(("MA", "delta"))
+    # lr.scalesplit()
+    # lr.predict()

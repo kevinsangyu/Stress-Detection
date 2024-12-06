@@ -107,8 +107,8 @@ if __name__ == '__main__':
     df = pd.DataFrame([])
     for i in e.iterable:
         print(f"Adding: {i.file_path} with length: {len(i.df)}")
-        df = pd.concat([df, i.df], axis=1)
-        print(df.to_string())
+        df = pd.concat([df.reset_index(drop=True), i.df.reset_index(drop=True)], axis=1)
+        print(df.tail(20))
         input("Enter to continue")
 
     print([i for i, x in enumerate(e.TAGS) if x == 1])
