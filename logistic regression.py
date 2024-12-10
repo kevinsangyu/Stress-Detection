@@ -12,10 +12,14 @@ class LRegression:
         self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         self.data.delta()
         self.data.homogenise(method="window", size=10)
+        # combine all sensors into 1 dataframe
+        # todo move this block of code into extractData and make it return the dataframe...
         self.df = pd.DataFrame([])
         for i in self.data.iterable:
             self.df = pd.concat([self.df.reset_index(drop=True), i.df.reset_index(drop=True)], axis=1)
-        self.df.dropna(inplace=True)
+        stress_df = pd.DataFrame(self.data.STRESS).rename(columns={0: 'Stress'})
+        self.df = pd.concat([self.df.reset_index(drop=True), stress_df.reset_index(drop=True)], axis=1)
+
         self.X_train = self.X_test = self.y_train = self.y_test = pd.DataFrame([])
 
     def drop(self, drop_list=()):
@@ -24,7 +28,6 @@ class LRegression:
                 for col in self.df.columns:
                     if drop in col:
                         self.df.drop(col, axis=1, inplace=True)
-        print(self.df.to_string())
 
     def select(self, select_list=()):
         if select_list:
@@ -32,16 +35,18 @@ class LRegression:
                 for col in self.df.columns:
                     if select not in col:
                         self.df.drop(col, axis=1, inplace=True)
-        print(self.df.to_string())
 
     def scalesplit(self):
         scaler = MaxAbsScaler()
-        X = self.df
-        y = pd.DataFrame(self.data.STRESS).rename(columns={0: 'Stress'})
+        self.df.dropna(inplace=True)  # dropping null values after selecting/dropping Moving Averages or Deltas
+
+        # separate the target and scale X
+        X = self.df.drop('Stress', axis=1)
+        y = self.df['Stress']
 
         X_scaled = scaler.fit_transform(X)
 
-        # split data, first 2 sets training, last set testing.
+        # split data, first 2 sets training, last set testing. i.e. 66:33 split.
         train_size = int(0.6 * len(X_scaled))
         print(f"X length: {len(X_scaled)}, y length: {len(y)}")
         self.X_train, self.X_test = X[:train_size], X[train_size:]
@@ -63,6 +68,6 @@ class LRegression:
 
 if __name__ == '__main__':
     lr = LRegression()
-    # lr.drop(("MA", "delta"))
-    # lr.scalesplit()
-    # lr.predict()
+    lr.drop(("MA", "delta"))
+    lr.scalesplit()
+    lr.predict()
