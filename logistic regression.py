@@ -53,10 +53,24 @@ class LRegression:
         self.y_train, self.y_test = y[:train_size], y[train_size:]
 
     def predict(self):
-        model = LogisticRegression()
+        # Class imbalance issue. 97% of the data is under no stress, and the model achieves a high accuracy by just
+        # not predicting. So we need to balance the classes out. The below just balances the weights, making
+        # misclassified stressed parts heavily penalised.
+        # this drops the accuracy from 0.97 to 0.69
+        model = LogisticRegression(class_weight='balanced')
         model.fit(self.X_train, self.y_train)
 
         y_pred = model.predict(self.X_test)
+        if y_pred.max() == 0.0:
+            print("Maximum is 0, no prediction was made.")
+            return
+        y_predlist = y_pred.tolist()
+        print(f'{len([i for i, x in enumerate(y_predlist) if x == 1])} stressed out of {len(y_predlist)}')
+        print(f"Timestamps: {[i+len(self.y_train) for i, x in enumerate(y_predlist) if x == 1]}")
+        differences = []
+        for i in range(0, len(y_predlist)-1):
+            differences.append(y_predlist[i+1]-y_predlist[i])
+        print(f"Differences: {differences}")
 
         accuracy = accuracy_score(self.y_test, y_pred)
         report = classification_report(self.y_test, y_pred)
