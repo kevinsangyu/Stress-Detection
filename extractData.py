@@ -35,9 +35,11 @@ class Extract(object):
         self.TEMP = Data(path.join(self.dir_path, r"TEMP.csv").replace("\\","/"))
         self.STRESS = [0 for i in range(0, len(self.HR.df))]
         self.TAGS = [0 for i in range(0, len(self.HR.df))]
+        self.df = pd.DataFrame([])
         self.iterable = [self.ACC, self.BVP, self.EDA, self.HR, self.TEMP]  # TAGS and IBI excluded.
         self.get_tags()
         self.get_stress()
+        self.combine_df()
 
     def get_tags(self):
         init_time = floor(float(self.HR.init_time[0]))
@@ -57,6 +59,12 @@ class Extract(object):
             [min, max] = line.split("-")
             for i in range(int(min), int(max)+1):
                 self.STRESS[i] = 1
+
+    def combine_df(self):
+        for i in self.iterable:
+            self.df = pd.concat([self.df.reset_index(drop=True), i.df.reset_index(drop=True)], axis=1)
+        stress_df = pd.DataFrame(self.STRESS).rename(columns={0: 'Stress'})
+        self.df = pd.concat([self.df.reset_index(drop=True), stress_df.reset_index(drop=True)], axis=1)
 
     def common_denominator(self):
         small = 500.0

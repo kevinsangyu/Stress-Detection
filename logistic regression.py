@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import classification_report, accuracy_score, precision_score
 import extractData
 
 
@@ -12,14 +12,7 @@ class LRegression:
         self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         self.data.delta()
         self.data.homogenise(method="window", size=10)
-        # combine all sensors into 1 dataframe
-        # todo move this block of code into extractData and make it return the dataframe...
-        self.df = pd.DataFrame([])
-        for i in self.data.iterable:
-            self.df = pd.concat([self.df.reset_index(drop=True), i.df.reset_index(drop=True)], axis=1)
-        stress_df = pd.DataFrame(self.data.STRESS).rename(columns={0: 'Stress'})
-        self.df = pd.concat([self.df.reset_index(drop=True), stress_df.reset_index(drop=True)], axis=1)
-
+        self.df = self.data.df
         self.X_train = self.X_test = self.y_train = self.y_test = pd.DataFrame([])
 
     def drop(self, drop_list=()):
@@ -73,9 +66,13 @@ class LRegression:
         print(f"Differences: {differences}")
 
         accuracy = accuracy_score(self.y_test, y_pred)
+        precision = precision_score(self.y_test, y_pred, average='binary')
+        precision_macro = precision_score(self.y_test, y_pred, average='macro') 
         report = classification_report(self.y_test, y_pred)
 
         print(f'Accuracy: {accuracy:.2f}')
+        print(f"Precision (binary): {precision:.2f}")
+        print(f"Precision (macro): {precision_macro:.2f}")
         print('Classification Report:')
         print(report)
 
