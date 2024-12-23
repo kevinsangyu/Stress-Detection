@@ -3,6 +3,7 @@ from sklearn.preprocessing import MaxAbsScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report, accuracy_score, precision_score
 import extractData
+from imblearn.under_sampling import RandomUnderSampler
 
 
 class LRegression:
@@ -48,8 +49,10 @@ class LRegression:
         # not predicting. So we need to balance the classes out. The below just balances the weights, making
         # misclassified stressed parts heavily penalised.
         # this drops the accuracy from 0.97 to 0.69
-        model = LogisticRegression(class_weight='balanced')
-        model.fit(self.X_train, self.y_train)
+        model = LogisticRegression(random_state=42)
+        undersampler = RandomUnderSampler(random_state=42)
+        X_train_balanced, y_train_balanced = undersampler.fit_resample(self.X_train, self.y_train)
+        model.fit(X_train_balanced, y_train_balanced)
 
         y_pred = model.predict(self.X_test)
         if y_pred.max() == 0.0:
