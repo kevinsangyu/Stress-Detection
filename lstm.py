@@ -5,7 +5,10 @@ import torch.utils.data
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import classification_report
+from sklearn.utils.class_weight import compute_class_weight
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 class LSTM():
     def __init__(self):
@@ -66,11 +69,16 @@ class LSTM():
         self.y_train = torch.tensor(self.y_train.values, dtype=torch.float32)
         self.y_test = torch.tensor(self.y_test.values, dtype=torch.float32)
 
-    def train(self, epochs=20, batch=32):
+    def train(self, epochs=20, batch=32, weighted=False):
         train_dataset = torch.utils.data.TensorDataset(self.X_train, self.y_train)
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch, shuffle=True)
         loss_values = []
         # returns each epoch's loss values for plotting purposes
+        if weighted:
+            class_weights = compute_class_weight('balanced', classes=np.array([0, 1]), y=self.y_train.squeeze().numpy())
+            class_weights = torch.tensor(class_weights, dtype=torch.float32)
+            print(f"Class weights: {class_weights}")
+            self.criterion = torch.nn.BCEWithLogitsLoss(pos_weight=class_weights[1])
 
         for epoch in range(epochs):
             self.model.train()
@@ -119,6 +127,14 @@ class LSTMmodule(torch.nn.Module):
 
 if __name__ == '__main__':
     epochs = 20
+    lstm = LSTM()
+    lstm.drop(("MA", "delta"))
+    lstm.defineModel()
+    lstm.dataprep()
+    loss = lstm.train(weighted=True)
+    lstm.evaluate()
+    lstm.plot(epochs, loss)
+
     lstm = LSTM()
     lstm.drop(("MA", "delta"))
     lstm.defineModel()
