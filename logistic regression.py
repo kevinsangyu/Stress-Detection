@@ -49,7 +49,8 @@ class LRegression:
         # not predicting. So we need to balance the classes out. The below just balances the weights, making
         # misclassified stressed parts heavily penalised.
         # this drops the accuracy from 0.97 to 0.69
-        model = LogisticRegression(random_state=42)
+        class_weights = {0: 1.0, 1: 1000.0}
+        model = LogisticRegression(random_state=42, class_weight=class_weights)
         undersampler = RandomUnderSampler(random_state=42)
         X_train_balanced, y_train_balanced = undersampler.fit_resample(self.X_train, self.y_train)
         model.fit(X_train_balanced, y_train_balanced)
