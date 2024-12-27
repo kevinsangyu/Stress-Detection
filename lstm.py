@@ -15,6 +15,7 @@ class LSTM():
         self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         self.data.delta()
         self.data.homogenise(method="window", size=10)
+        self.data.combine_df()
         self.df = self.data.df
         # init fields for later
         self.X_train = self.X_test = self.y_train = self.y_test = None  # dataframe into torch tensors
@@ -31,7 +32,7 @@ class LSTM():
         if select_list:
             for select in select_list:
                 for col in self.df.columns:
-                    if select not in col:
+                    if select not in col and col != "Stress":
                         self.df.drop(col, axis=1, inplace=True)
 
     def defineModel(self, hidden_dim=50, output_dim=1):
@@ -128,15 +129,7 @@ class LSTMmodule(torch.nn.Module):
 if __name__ == '__main__':
     epochs = 20
     lstm = LSTM()
-    lstm.drop(("MA", "delta"))
-    lstm.defineModel()
-    lstm.dataprep()
-    loss = lstm.train(weighted=True)
-    lstm.evaluate()
-    lstm.plot(epochs, loss)
-
-    lstm = LSTM()
-    lstm.drop(("MA", "delta"))
+    lstm.select("delta")
     lstm.defineModel()
     lstm.dataprep()
     loss = lstm.train()

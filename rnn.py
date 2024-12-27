@@ -15,6 +15,7 @@ class RNN:
         self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
         self.data.delta()
         self.data.homogenise(method="window", size=10)
+        self.data.combine_df()
         self.df = self.data.df
         # init fields for later
         self.X_train = self.X_test = self.y_train = self.y_test = None  # dataframe into torch tensors
@@ -31,7 +32,7 @@ class RNN:
         if select_list:
             for select in select_list:
                 for col in self.df.columns:
-                    if select not in col:
+                    if select not in col and col != "Stress":
                         self.df.drop(col, axis=1, inplace=True)
 
     def defineModel(self, hidden_size=64, num_layers=1, output_size=1):

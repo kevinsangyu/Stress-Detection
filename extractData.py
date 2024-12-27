@@ -39,7 +39,6 @@ class Extract(object):
         self.iterable = [self.ACC, self.BVP, self.EDA, self.HR, self.TEMP]  # TAGS and IBI excluded.
         self.get_tags()
         self.get_stress()
-        self.combine_df()
 
     def get_tags(self):
         init_time = floor(float(self.HR.init_time[0]))
