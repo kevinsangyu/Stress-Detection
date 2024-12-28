@@ -1,10 +1,11 @@
 import pandas as pd
 from sklearn.metrics import classification_report
-
+from sklearn.utils.class_weight import compute_class_weight
 import extractData
 import torch
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 
 class TCN:
@@ -35,7 +36,7 @@ class TCN:
     def defineModel(self):
         self.model = TCNModule(input_size=len(self.df.columns)-1, num_classes=1, num_channels=[32, 64], kernel_size=3,
                                dropout=0.2)
-        self.criterion = torch.nn.BCELoss()
+        # self.criterion = torch.nn.BCELoss()  defined later, because weights.
         self.optim = torch.optim.Adam(self.model.parameters(), lr=0.001)
 
     def dataprep(self, seq_length=10):
@@ -54,7 +55,7 @@ class TCN:
         y_trimmed = y[:num_sequences * seq_length]
 
         X_tcn = X_trimmed.reshape(-1, seq_length, num_features)
-        y_tcn = y_trimmed.values[:len(X_tcn)]
+        y_tcn = y_trimmed.values[::seq_length]
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(X_tcn, y_tcn, test_size=0.2,
                                                                                 random_state=42)
@@ -65,6 +66,10 @@ class TCN:
 
     def train(self, epochs, batch_size):
         self.model.train()
+        class_weights = compute_class_weight('balanced', classes=np.array([0.0, 1.0]), y=self.y_train.numpy().flatten())
+        class_weights = torch.tensor(class_weights, dtype=torch.float32)
+
+        self.criterion = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor(class_weights[1] / class_weights[0]))
         for epoch in range(epochs):
             permutation = torch.randperm(self.X_train.size(0))
             epoch_loss = 0
@@ -134,10 +139,12 @@ class TCNModule(torch.nn.Module):
         self.fc = torch.nn.Linear(num_channels[-1], num_classes)
 
     def forward(self, x):
-        # TCN expects input in shape [batch_size, input_size, sequence_length]
-        x = self.network(x)
-        x = x[:, :, -1]  # Use the last time step's output
-        return torch.sigmoid(self.fc(x))
+        out = self.network(x)
+        # Check if residual connection needs adjustment
+        if x.size(1) != out.size(1) or x.size(2) != out.size(2):
+            x = torch.nn.functional.pad(x, (0, out.size(2) - x.size(2)))
+        out = self.fc(out.mean(dim=2))
+        return out
 
 
 if __name__ == '__main__':
