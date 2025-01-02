@@ -53,7 +53,7 @@ class Extract(object):
             stress_txt = open(path.join(self.dir_path, r"stress.txt"))
         except FileNotFoundError:
             print("No stress file found.")
-            raise FileNotFoundError
+            return
         for line in stress_txt.readlines():
             [min, max] = line.split("-")
             for i in range(int(min), int(max)+1):

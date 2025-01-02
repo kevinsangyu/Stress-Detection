@@ -66,31 +66,59 @@ class CLASP(object):
 
 class RUPTURES(object):
     def __init__(self):
-        self.data = extractData.Extract(r"data/Kevin data/2024_04_22_vs_pegasus")
-        homogenise_method = "sampling"
-        self.data.homogenise(method=homogenise_method, size=10)
+        self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
+        self.data.delta()
+        self.data.homogenise(method="window", size=10)
+        self.data.combine_df()
+        self.df = self.data.df
+        print(f"Available features: {self.df.columns}")
 
-        self.ts = self.data.HR.df
-        if homogenise_method == "window":
-            self.ts = self.ts['MA']
+    def segment(self, feature="HR", exclude="no feature should have this string.!@#)(*%"):
+        if not feature:
+            # use all features if no specific one is provided
+            ts = self.df
+            cols = [col for col in self.df.columns]
         else:
-            self.ts = self.ts[0]
+            # grab the MA, delta and raw features of given feature
+            # also works in grabbing just MA values or just delta values if you use 'MA' or 'delta'
+            cols = [col for col in self.df.columns if feature in col and exclude not in col]
+            print(f"Selected columns: {cols}")
+            ts = self.df[cols]
+        ts.dropna(inplace=True)
 
-    def segment(self):
+        # select model and algorithm then predict
         model = "rbf"
-        print("f1")
-        algo = rpt.Dynp(model=model, min_size=10).fit(self.ts.values)
-        print("f2")
+        algo = rpt.Binseg(model=model, min_size=10).fit(ts.values)
+        print("Segmenting...")
         predicted = algo.predict(n_bkps=6)
-        print("f3")
+
+        # display
         indices = [i for i, x in enumerate(self.data.TAGS) if x == 1]
-        # rpt.show.display(self.ts.values, predicted, figsize=(10, 6))
-        rpt.display(self.ts.values, indices, predicted)
+        fig, axarr = rpt.display(ts.values, predicted, indices, figsize=(10, 6))
+
+        keep_axes = []
+        for i in range(len(axarr)):
+            if not feature:
+                # to increase visibility, delete the MA and delta features from the graph, if using all features.
+                if "MA" in cols[i] or "delta" in cols[i]:
+                    fig.delaxes(axarr[i])
+                    continue
+            axarr[i].title.set_text(cols[i])
+            keep_axes.append(axarr[i])
+        # reposition remaining/kept axes
+        if not feature:
+            for i, ax in enumerate(keep_axes):
+                ax.set_position([
+                    0.05,  # x
+                    0.9 - i * 0.12,  # y
+                    0.90,  # width
+                    0.08  # height
+                ])
         plt.show()
 
 
 if __name__ == '__main__':
-    # rup = RUPTURES()
-    # rup.segment()
-    clsp = CLASP(delta_switch=True)
-    clsp.segment()
+    rup = RUPTURES()
+    rup.segment(feature="delta", exclude="MA")
+    # clsp = CLASP(delta_switch=True)
+    # clsp.segment()
