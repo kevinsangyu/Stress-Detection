@@ -1,7 +1,5 @@
 import matplotlib.pyplot as plt
 from claspy.segmentation import BinaryClaSPSegmentation
-from sktime.annotation.plotting.utils import plot_time_series_with_change_points, plot_time_series_with_profiles
-from sktime.datasets import load_electric_devices_segmentation
 import ruptures as rpt
 import extractData
 import pandas as pd
@@ -18,18 +16,19 @@ class CLASP(object):
 
     def segment(self, feature="HR", exclude="no feature should have this string.!@#)(*%"):
         if not feature:
-            # use all features if no specific one is provided
-            ts = self.df
-            cols = [col for col in self.df.columns]
+            # use all features if no specific one is provided, removing the excluded features.
+            cols = [col for col in self.df.columns if exclude not in col and "delta" not in col]
+            ts = self.df[cols]
+            ts.drop("Stress", axis=1, inplace=True)
         else:
             # grab the MA, delta and raw features of given feature
             # also works in grabbing just MA values or just delta values if you use 'MA' or 'delta'
             cols = [col for col in self.df.columns if feature in col and exclude not in col]
-            print(f"Selected columns: {cols}")
             ts = self.df[cols]
+        print(f"Selected columns: {ts.columns}")
         ts.dropna(inplace=True)
 
-        clasp = BinaryClaSPSegmentation(n_segments=5, validation=None)
+        clasp = BinaryClaSPSegmentation(n_segments=8, validation=None)
         found_cps = clasp.fit_predict(time_series=ts.values)
         print("The found change points are", found_cps)
 
@@ -106,4 +105,4 @@ if __name__ == '__main__':
     # rup.segment(feature="")
     clsp = CLASP()
     # clsp.test()
-    clsp.segment(feature="EDA", exclude="MA")
+    clsp.segment(feature="", exclude="MA")
