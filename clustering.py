@@ -77,22 +77,41 @@ class Kmeans_single():
 
 
 class Kmeans_multiple():
-    def __init__(self):
+    def __init__(self, feature="", excludelist=()):
         scaler = StandardScaler()
-        data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
-        data.delta()
-        data.homogenise(method="window", size=10)
+        self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
+        self.data.delta()
+        self.data.homogenise(method="window", size=10)
+        self.data.combine_df()
+        self.df = self.data.df
 
-        df = pd.DataFrame([])
-        for i in data.iterable:
-            df = pd.concat([df, i.df], axis=1)
-        df.dropna(inplace=True)
-        print(df.to_string())
+        if not feature:
+            # use all features if no specific one is provided, removing the excluded features.
+            cols = [col for col in self.df.columns]
+            for col in cols.copy():
+                for exclude in excludelist:
+                    if exclude in col:
+                        cols.remove(col)
+                        break
+            df = self.df[cols]
+            df.drop("Stress", axis=1, inplace=True)
+        else:
+            # grab the MA, delta and raw features of given feature
+            # also works in grabbing just MA values or just delta values if you use 'MA' or 'delta'
+            cols = [col for col in self.df.columns if feature in col]
+            for col in cols.copy():
+                for exclude in excludelist:
+                    if exclude in col:
+                        cols.remove(col)
+                        break
+            df = self.df[cols]
+        print(f"Selected columns: {cols}")
+        df = df.dropna()
 
         scaled_data = scaler.fit_transform(df)
         algorithm = KMeans(n_clusters=3, random_state=0)
         algorithm.fit(scaled_data)
-        # try diff clustering: dbscan: https://scikit-learn.org/stable/modules/clustering.html
+        df['Cluster'] = algorithm.labels_
 
         color_dict = {}
 
@@ -106,12 +125,22 @@ class Kmeans_multiple():
                 elif cluster == 2:
                     color_dict[cluster_data.index[i]] = 'blue'
 
-        print(df.to_string())
-
         plt.figure(figsize=(8, 6))
         for i in df.index:
             # for column in df.columns:
             plt.plot(i, df['HR'][i], 'o', color=color_dict.get(i, 'black'))
+        plt.show()
+
+        X = df.drop(columns='Cluster')
+        y = df['Cluster']
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+        clf = DecisionTreeClassifier(random_state=0)
+        clf.fit(X_train, y_train)
+
+        plt.figure(figsize=(12, 8))
+        plot_tree(clf, feature_names=X.columns, class_names=['Cluster 0', 'Cluster 1', 'Cluster 2'], filled=True)
         plt.show()
 
 
@@ -197,6 +226,7 @@ class Dbscan():
 
 if __name__ == '__main__':
     # test = Dbscan(drop_list=('MA', 'delta'))
-    test = Kmeans_multiple()
-    test = Dbscan(select_list=('delta'))
+    # test = Kmeans_single()
+    test = Kmeans_multiple(feature="", excludelist=("MA", "delta"))
+    # test = Dbscan(select_list=('delta'))
 
