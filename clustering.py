@@ -129,31 +129,28 @@ class Kmeans_multiple():
         for i in df.index:
             # for column in df.columns:
             plt.plot(i, df['HR'][i], 'o', color=color_dict.get(i, 'black'))
-        plt.show()
 
         X = df.drop(columns='Cluster')
         y = df['Cluster']
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-        clf = DecisionTreeClassifier(random_state=0)
+        clf = DecisionTreeClassifier(random_state=0, min_samples_split=500, max_depth=5)
         clf.fit(X_train, y_train)
 
         plt.figure(figsize=(12, 8))
-        plot_tree(clf, feature_names=X.columns, class_names=['Cluster 0', 'Cluster 1', 'Cluster 2'], filled=True)
+        plot_tree(clf, feature_names=X.columns, class_names=['Cluster 0', 'Cluster 1', 'Cluster 2'], filled=True, fontsize=9)
         plt.show()
 
 
 class Dbscan():
     def __init__(self, drop_list=(), select_list=()):
-        data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
-        data.delta()
-        data.homogenise(method="window", size=10)
-
-        df = pd.DataFrame([])
-        for i in data.iterable:
-            df = pd.concat([df, i.df], axis=1)
-        print(df.to_string())
+        self.data = extractData.Extract(r"data/Kevin data/2024_04_29_vs_snortsnort")
+        self.data.delta()
+        self.data.homogenise(method="window", size=10)
+        self.data.combine_df()
+        self.df = self.data.df
+        df = self.df
         df.dropna(inplace=True)
         if drop_list:
             for drop in drop_list:
@@ -170,14 +167,14 @@ class Dbscan():
         reduced_data = pca.fit_transform(df)
 
         self.nearest(reduced_data)
-        epsilon = int(input("Enter elbow value: "))
-        # epsilon = 30
+        epsilon = float(input("Enter elbow value: "))
+        # epsilon = 10
 
-        scan = DBSCAN(eps=epsilon, min_samples=2)
+        scan = DBSCAN(eps=epsilon, min_samples=2*len(df.columns))
         labels = scan.fit_predict(reduced_data)
         print(f"{len(set(labels))} Clusters")
 
-        clf = DecisionTreeClassifier(random_state=42)
+        clf = DecisionTreeClassifier(random_state=42, min_samples_split=100, max_depth=5)
         clf.fit(df, labels)
 
         cluster_colors = ['red', 'green', 'blue', 'purple', 'brown', 'black']  # Replace with your cluster colors
@@ -186,6 +183,8 @@ class Dbscan():
         # Plot each time series, coloring the segments by the cluster
         plt.figure(figsize=(12, 6))
         for col in df.columns:
+            if col != "HR":
+                continue
             plt.plot(df[col], color='black', alpha=0.5)
             for cluster_label in np.unique(labels):
                 if cluster_label == -1:
@@ -199,13 +198,17 @@ class Dbscan():
                          df[col].iloc[cluster_indices], 'o',
                          label=f'Cluster {cluster_label}' if cluster_label != -1 else 'Noise',
                          color=color)
+            x_values = [i for i, n in enumerate(self.data.STRESS) if n == 1]
+            for x in x_values:
+                plt.axvline(x=x, color='black', linestyle='dotted')
 
             plt.title(f'Time Series: {col}')
             plt.xlabel('Time')
             plt.ylabel('Value')
+            plt.legend()
             plt.show()
             plot_tree(clf, feature_names=df.columns, class_names=[f'Cluster {i}' for i in np.unique(labels)],
-                      filled=True, fontsize=10)
+                      filled=True, fontsize=8)
             plt.show()
 
     def nearest(self, reduced_data):
@@ -225,8 +228,8 @@ class Dbscan():
 
 
 if __name__ == '__main__':
-    # test = Dbscan(drop_list=('MA', 'delta'))
+    test = Dbscan(drop_list=("MA", "delta"))
     # test = Kmeans_single()
-    test = Kmeans_multiple(feature="", excludelist=("MA", "delta"))
+    # test = Kmeans_multiple(feature="", excludelist=("MA", "delta"))
     # test = Dbscan(select_list=('delta'))
 
