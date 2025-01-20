@@ -109,6 +109,7 @@ class RNN:
             # class_weights = compute_class_weight('balanced', classes=np.array([0, 1]), y=self.y_train.squeeze().numpy())
             class_weights = torch.tensor(custom_weight, dtype=torch.float32)
             print(f"Class weights: {class_weights}")
+            class_weights = torch.tensor(class_weights, dtype=torch.float32)
             self.criterion = torch.nn.BCEWithLogitsLoss(pos_weight=class_weights[1])
 
         for epoch in range(epochs):
@@ -219,7 +220,7 @@ def calc_precision(epochs=20, plot=False, weight=40):
         plt.xticks(range(len(results)), list(results.keys()))
         plt.title("Precision scores of different data selections")
         plt.ylabel("Precision Score")
-        plt.xlabel(f"Data selections, class_weight = {weight} for weighted selections")
+        plt.xlabel(f"Data selections, class_weight = {weight}, epochs = {epochs} for weighted selections")
         plt.show()
     return results
 
@@ -239,7 +240,7 @@ def calc_epochs(limit):
     plt.show()
 
 
-def custome_weights(limit):
+def custom_weights(limit):
     indexes = []
     weights = []
     for weight in range(10, limit, 10):
